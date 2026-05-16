@@ -99,7 +99,7 @@ class AppEngine:
 # başlangıçta test yapabilmek için sisteme 1 admin ve 1 normal kullanıcı ekledik
         self.users = {
             "admin": User("admin", "Sistem Yöneticisi", "123", "VRX Merkez"),
-            "user": User("user", "Örnek Kullanıcı", "123", "İstanbul, İstanbul")
+            "Erdem Yücesan": User("Erdem Yücesan", "Erdem Yücesan", "123", "İstanbul, İstanbul")
         }
 # araç filosunu ve ürünleri başlatırken oluşturuyo
         self.vehicles = self._genis_filo_olustur()
@@ -118,7 +118,7 @@ class AppEngine:
             ("Lamborghini", "Revuelto", "Spor", 3000), ("BMW", "M8 Competition", "Spor", 1200),
             ("Audi", "R8 V10", "Spor", 1400), ("McLaren", "720S", "Spor", 2200),
             
-            ("Tesla", "Model S Plaid", "Elektrikli", 900), ("Porsche", "Taycan Turbo S", "Elektrikli", 1100),
+            ("Tesla", "Model Y", "Elektrikli", 900), ("Porsche", "Taycan Turbo S", "Elektrikli", 1100),
             ("Lucid", "Air Sapphire", "Elektrikli", 1300), ("BMW", "i7 M70", "Elektrikli", 1000),
             ("Mercedes", "EQS 580", "Elektrikli", 950), ("Audi", "e-tron GT", "Elektrikli", 1050),
             
@@ -194,6 +194,24 @@ class AppEngine:
             
             return True, kullanilan_km
         return False, 0
+    # adminin belirli bir müşteriye ücretsiz araç tanımlamasını sağlayan fonksiyon
+    def hediye_arac_tanimla(self, kullanici_id, arac, saat):
+        if kullanici_id not in self.users:
+            return False, "Kullanıcı bulunamadı."
+        if not arac.musait_mi:
+            return False, "Bu araç şu an müsait değil."
+
+        kullanici = self.users[kullanici_id]
+        arac.arac_durumu_guncelle(False) # araç kiralandı olarak işaretlendi
+        self.rental_counter += 1
+
+        # Hediye olduğu için toplam_tutar 0 olarak gönderiliyor
+        yeni_kiralama = Rental(self.rental_counter, arac, kullanici, saat, 0.0)
+        kullanici.aktif_kiralamalar.append(yeni_kiralama)
+
+        # hediye edildi mesajı
+        mesaj = f"Tebrikler! {arac.marka} {arac.model} aracı, {kullanici.ad} adlı müşteriye {saat} saatliğine HEDİYE edildi!"
+        return True, mesaj
         
     # yalnızca adminlerin yeni araç ekleyebileceği fonksiyon
     def admin_arac_ekle(self, marka, model, kategori, fiyat):
