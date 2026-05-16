@@ -287,7 +287,7 @@ Müşteri Puanı: {v.degerlendirme} / 5.0
         
         # kiralama süresini seçtirdiğimiz açılır menü 
         saat_var = ctk.StringVar(value="1 Saat")
-        saat_menu = ctk.CTkOptionMenu(pop, values=["1 Saat", "3 Saat", "6 Saat", "12 Saat", "24 Saat (1 Gün)", "48 Saat (2 Gün)"], variable=saat_var, width=250, height=40)
+        saat_menu = ctk.CTkOptionMenu(pop, values=["1 Saat", "3 Saat", "6 Saat", "12 Saat", "24 Saat (1 Gün)", "Süresiz Tahsis (Platinum VIP)"], variable=saat_var, width=250, height=40)
         saat_menu.pack(pady=5)
         
         # kupon kodu alanı
@@ -512,12 +512,13 @@ Müşteri Puanı: {v.degerlendirme} / 5.0
         
         self.a_cont = ctk.CTkFrame(self.main_container, fg_color="#050505")
         self.a_cont.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
-        
+
         menus = [
             ("📊 Genel Özet", self.adm_overview),
             ("👥 Üye Yönetimi", self.adm_users), 
             ("🚘 Araç Yönetimi", self.adm_vehicles),
             ("➕ Yeni Araç Ekle", self.adm_add_vehicle),
+            ("🎁 Araç Hediye Et", self.adm_gift_vehicle), # YENİ EKLENEN BUTON
             ("🛒 Mağaza Stokları", self.adm_store), 
             ("🚪 Sistemden Çık", self.show_login_screen)
         ]
@@ -594,7 +595,8 @@ Müşteri Puanı: {v.degerlendirme} / 5.0
             btn_text = "Bakıma Al (Gizle)" if v.musait_mi else "Müsait Yap"
             ctk.CTkButton(f, text=btn_text, width=120, fg_color="#444", command=toggle_status).pack(side="right", padx=20)
 
-    # veritabanına yeni araba kaydettiğimiz form
+            # veritabanına yeni araba kaydettiğimiz form
+            # veritabanına yeni araba kaydettiğimiz form
     def adm_add_vehicle(self):
         for w in self.a_cont.winfo_children(): w.destroy()
         ctk.CTkLabel(self.a_cont, text="YENİ ARAÇ EKLE", font=("Arial", 26, "bold")).pack(pady=20, anchor="w")
@@ -602,29 +604,90 @@ Müşteri Puanı: {v.degerlendirme} / 5.0
         form_f = ctk.CTkFrame(self.a_cont, fg_color="#111", corner_radius=10)
         form_f.pack(fill="x", padx=50, pady=20, ipady=30)
         
-        marka_ent = ctk.CTkEntry(form_f, placeholder_text="Marka (Örn: Porsche)", width=400, height=45); marka_ent.pack(pady=10)
-        model_ent = ctk.CTkEntry(form_f, placeholder_text="Model (Örn: 911 GT3)", width=400, height=45); model_ent.pack(pady=10)
+        marka_ent = ctk.CTkEntry(form_f, placeholder_text="Marka (Örn: Porsche)", width=400, height=45)
+        marka_ent.pack(pady=10)
+        
+        model_ent = ctk.CTkEntry(form_f, placeholder_text="Model (Örn: 911 GT3)", width=400, height=45)
+        model_ent.pack(pady=10)
         
         kat_var = ctk.StringVar(value="Spor")
         kat_menu = ctk.CTkOptionMenu(form_f, values=["Spor", "Elektrikli", "SUV", "Motor"], variable=kat_var, width=400, height=45)
         kat_menu.pack(pady=10)
         
-        fiyat_ent = ctk.CTkEntry(form_f, placeholder_text="Saatlik Fiyat (TL)", width=400, height=45); fiyat_ent.pack(pady=10)
+        fiyat_ent = ctk.CTkEntry(form_f, placeholder_text="Saatlik Fiyat (TL)", width=400, height=45)
+        fiyat_ent.pack(pady=10)
         
         def add_car():
             if not all([marka_ent.get(), model_ent.get(), fiyat_ent.get()]):
                 self.show_vrx_msg("HATA", "Lütfen tüm alanları doldurun.", "red")
                 return
             try:
-                # fiyata harf girilirse sistem tekrar deneme
                 fiyat = float(fiyat_ent.get())
                 self.engine.admin_arac_ekle(marka_ent.get(), model_ent.get(), kat_var.get(), fiyat)
                 self.show_vrx_msg("BAŞARILI", "Araç filoya eklendi.", "green")
-                self.adm_vehicles() # ekledikten sonra araç listesi sayfasına yönlendir
+                self.adm_vehicles() 
             except ValueError:
                 self.show_vrx_msg("HATA", "Fiyat sadece rakam olmalıdır.", "red")
 
         ctk.CTkButton(form_f, text="FİLOYA EKLE", fg_color="#00AA00", font=("Arial", 16, "bold"), height=50, width=400, command=add_car).pack(pady=20)
+        
+        # adminin müşterilere araç hediye ettiği ekran
+    def adm_gift_vehicle(self):
+        for w in self.a_cont.winfo_children(): w.destroy()
+        
+        ctk.CTkLabel(self.a_cont, text="🎁 VIP MÜŞTERİYE ARAÇ HEDİYE ET", font=("Arial", 26, "bold"), text_color="#FFD700").pack(pady=20, anchor="w")
+        
+        form_f = ctk.CTkFrame(self.a_cont, fg_color="#111", corner_radius=10)
+        form_f.pack(fill="x", padx=50, pady=20, ipady=30)
+
+        ctk.CTkLabel(form_f, text="Kullanıcı Seçin:", font=("Arial", 14, "bold")).pack(pady=(10, 0))
+        kullanici_listesi = [f"{uid} - {u.ad}" for uid, u in self.engine.users.items() if uid != "admin"]
+        secilen_kullanici = ctk.StringVar(value=kullanici_listesi[0] if kullanici_listesi else "Kullanıcı Yok")
+        kullanici_menu = ctk.CTkOptionMenu(form_f, values=kullanici_listesi, variable=secilen_kullanici, width=400, height=45)
+        kullanici_menu.pack(pady=(5, 15))
+
+        ctk.CTkLabel(form_f, text="Hediye Edilecek Aracı Seçin:", font=("Arial", 14, "bold")).pack(pady=(10, 0))
+        musait_araclar = [v for v in self.engine.vehicles if v.musait_mi]
+        arac_listesi = [f"{v.arac_id} - {v.marka} {v.model}" for v in musait_araclar]
+        
+        secilen_arac = ctk.StringVar(value=arac_listesi[0] if arac_listesi else "Müsait Araç Yok")
+        arac_menu = ctk.CTkOptionMenu(form_f, values=arac_listesi, variable=secilen_arac, width=400, height=45)
+        arac_menu.pack(pady=(5, 15))
+
+        ctk.CTkLabel(form_f, text="Hediye Kiralama Süresi:", font=("Arial", 14, "bold")).pack(pady=(10, 0))
+        sure_var = ctk.StringVar(value="Süresiz Tahsis (Platinum VIP)")
+        sure_menu = ctk.CTkOptionMenu(form_f, values=["3 Saat", "12 Saat", "24 Saat (VIP Hediye)", "Süresiz Tahsis (Platinum VIP)"], variable=sure_var, width=400, height=45)
+        sure_menu.pack(pady=(5, 20))
+
+        def hediye_et_baslat():
+            if not kullanici_listesi or not arac_listesi:
+                self.show_vrx_msg("HATA", "Kullanıcı veya müsait araç bulunamadı.", "red")
+                return
+
+            k_id = secilen_kullanici.get().split(" - ")[0]
+            k_isim = secilen_kullanici.get().split(" - ")[1] 
+
+            a_id = int(secilen_arac.get().split(" - ")[0])
+            
+            secim = sure_var.get()
+            if "Süresiz" in secim or "Tahsis" in secim:
+                saat = 999999 
+            else:
+                saat = int(secim.split()[0])
+
+            arac = next((v for v in self.engine.vehicles if v.arac_id == a_id), None)
+
+            if arac:
+                basarili, _ = self.engine.hediye_arac_tanimla(k_id, arac, saat)
+                if basarili:
+                    ozel_mesaj = f"Tebrikler!\n\n{arac.marka} {arac.model} aracı,\n{k_isim} adlı kullanıcıya\n{secim} olarak hediye edilmiştir."
+                    self.show_vrx_msg("🎉 VIP İŞLEM BAŞARILI", ozel_mesaj, "green")
+                    self.adm_gift_vehicle() 
+                else:
+                    self.show_vrx_msg("HATA", "İşlem sırasında bir hata oluştu.", "red")
+
+        # buton
+        ctk.CTkButton(form_f, text="🎁 SEÇİLİ ARACI HEDİYE ET", fg_color="#FFD700", text_color="#050505", font=("Arial", 16, "bold"), height=50, width=400, command=hediye_et_baslat).pack(pady=20)
 
     # mağaza için ürün stoku ekleme sayfası
     def adm_store(self):
